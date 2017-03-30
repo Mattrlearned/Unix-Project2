@@ -6,6 +6,9 @@ SOURCES = $(wildcard src/*.c)
 OBJS = $(notdir $(patsubst %.c,%.o,$(wildcard ./src/*.c)))
 PROGS = $(notdir $(basename $(SOURCES)))
 
+mysh : mysh.c
+	gcc mysh.c -o mysh
+
 $(PROGS) : $(OBJS)
 	gcc -o $@ $^
 
