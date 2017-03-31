@@ -33,7 +33,7 @@ int mysh_cd(char **args)
     fprintf(stderr, "mysh: expected argument to \"cd\"\n");
   } else {
     if (chdir(args[1]) != 0) {
-      perror("lsh");
+      perror("mysh");
     }
   }
   return 1;
@@ -68,7 +68,7 @@ int mysh_launch(char **args)
   if (pid == 0) {
     // Child process
     if (execvp(args[0], args) == -1) {
-      perror("lsh");
+      perror("mysh");
     }
     exit(EXIT_FAILURE);
   } else if (pid < 0) {
@@ -104,34 +104,34 @@ int mysh_execute(char **args)
 
 char* mysh_read()
 {
-	char* line = NULL;
-	size_t bufSize = 0;
-	getline(&line, &bufSize, stdin);
-	return line;
+  char* line = NULL;
+  size_t bufSize = 0;
+  getline(&line, &bufSize, stdin);
+  return line;
 }
 
 char** mysh_parse(char* line)
 {
-	int bufSize = MYSH_TOK_BUFSIZE;
-	int pos = 0;
-	char** tokens = malloc(bufSize * sizeof(char*));
-	char* token;
+  int bufSize = MYSH_TOK_BUFSIZE;
+  int pos = 0;
+  char** tokens = malloc(bufSize * sizeof(char*));
+  char* token;
    
-   	token = strtok(line, MYSH_TOK_DELIMITER);
+    token = strtok(line, MYSH_TOK_DELIMITER);
     while (token != NULL) {
-    	tokens[pos] = token;
-    	pos++;
-    	if (pos >= bufSize)
-    	{
-    		bufSize += MYSH_TOK_BUFSIZE;
-    		tokens = realloc(tokens, bufSize * sizeof(char*));
-    		if (!tokens) 
-    		{
-    			fprintf(stderr, "mysh: memory allocation error\n");
-    			exit(EXIT_FAILURE);
-    		}
-    	}
-    	token = strtok(NULL, MYSH_TOK_DELIMITER);
+      tokens[pos] = token;
+      pos++;
+      if (pos >= bufSize)
+      {
+        bufSize += MYSH_TOK_BUFSIZE;
+        tokens = realloc(tokens, bufSize * sizeof(char*));
+        if (!tokens) 
+        {
+          fprintf(stderr, "mysh: memory allocation error\n");
+          exit(EXIT_FAILURE);
+        }
+      }
+      token = strtok(NULL, MYSH_TOK_DELIMITER);
     }
     tokens[pos] = NULL;
     return tokens;
@@ -139,23 +139,23 @@ char** mysh_parse(char* line)
 
 void mysh_loop()
 {
-	char *line;
-	char **args;
-	int status;
+  char *line;
+  char **args;
+  int status;
 
-	do {
-		printf("$ \n");
-		line = mysh_read();
-		args = mysh_parse(line);
-		status = mysh_execute(args);
-		free(line);
-		free(args);
-	} while (status);
+  do {
+    printf("mysh-$ ");
+    line = mysh_read();
+    args = mysh_parse(line);
+    status = mysh_execute(args);
+    free(line);
+    free(args);
+  } while (status);
 }
 
 int main(int argc, char const *argv[])
 {
-	// Run command loop
-	mysh_loop();
-	return EXIT_SUCCESS;
+  // Run command loop
+  mysh_loop();
+  return EXIT_SUCCESS;
 }
