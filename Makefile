@@ -5,15 +5,12 @@
 SOURCES = $(wildcard src/*.c)
 OBJS = $(notdir $(patsubst %.c,%.o,$(wildcard ./src/*.c)))
 PROGS = $(notdir $(basename $(SOURCES)))
+CC= gcc
 
-#mysh : mysh.c
-#	gcc mysh.c -o mysh
-
-$(PROGS) : $(OBJS)
-	gcc -o $@ $^
+all: $(PROGS)
 
 $(OBJS): %.o: ./src/%.c
-	gcc -g -c $< -o $@
+	gcc -g -w -c $< -o $@
 
 clean:
 	rm -rf $(OBJS) $(PROGS)
