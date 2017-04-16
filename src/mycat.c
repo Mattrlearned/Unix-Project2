@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include <fcntl.h>
-#include <stdio.h>     
+#include <stdlib.h>
+#include <err.h>
+#include <sys/stat.h>
 
 int main(int argc, char *argv[])
 {
@@ -19,15 +20,25 @@ int main(int argc, char *argv[])
    else{ //reading from a file
       char c;
       FILE *file;
+      struct stat fStat;
       file = fopen(argv[1],"r");
-      if(file) {
+
+      if(file == NULL){
+         warn("%s", argv[1]);
+         return 0;
+      }
+      else if(file != NULL && stat(argv[1], &fStat) <0){
+         warn("%s", argv[1]);
+         return 0;
+      }
+      else if(S_ISDIR(fStat.st_mode)){
+         fprintf(stderr, "mycat: %s: Is a directory\n", argv[1]);
+         return 0;
+      }
+      else {
          while((c = getc(file)) != EOF)
             putchar(c);
          fclose(file);
-      }
-      else {
-         fprintf(stderr, "File not found.\n");
-         exit(1);
       }
    }
 }                       

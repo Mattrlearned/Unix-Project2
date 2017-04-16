@@ -144,6 +144,7 @@ int main(int argc, char const *argv[]) {
       /* check if cmd is a built-in or exit*/
       if (strcmp(args[0], "mypwd") == 0) {
         printf("%s\n", getenv("PWD"));
+        status =1;
       }
       else if (strcmp(args[0], "mycd") == 0) {
         status = mycd(args);        
