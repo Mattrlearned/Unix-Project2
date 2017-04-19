@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
-
 int mysh_execute(char** args) {
   pid_t pid, wpid;
   int status;
