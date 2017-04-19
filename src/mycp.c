@@ -8,22 +8,24 @@
 #define BUFSIZE 1024
 #define COPYBUF 0644
 
-int getstat(char *filename)
+int getstat(char *filename, char* fileN)
 {
     struct stat fileInfo;
+    if ( (strcmp(fileN, ".") == 0) || (strcmp(fileN, "..") == 0) )
+    	return -1;
 
     //printf("Next File %s\n", filename);
-    if(lstat(filename, &fileInfo) < 0)
+    if(lstat(filename, &fileInfo) < 0) {
     	perror("Cannot open file.");
-    else {
-    	if(!S_ISDIR(fileInfo.st_mode))
-			return 1;
-		else
-			return 0;
+    	return -1;
     }
+    
+    if(!S_ISDIR(fileInfo.st_mode))
+		return 1;
+	else
+		return 0;
 
-    printf("Here.\n");
-    return 0;
+    return -1;
 }
 
 // Helper
@@ -36,17 +38,12 @@ char* stringConcat(const char* s1, const char* s2) {
 
 int cpFile(char* src, char* dest) {
 	
-	// Check stat to verify src is a regular file
+	// Check stat to verify src can be opened
 	// If not, then handle as an error
 	struct stat fileInfo;
 	if (lstat(src, &fileInfo) < 0) {
 		perror("Cannot open file");
 	}
-
-	// if (!S_ISREG(fileInfo.st_mode)) {
-	// 	printf("%s is not a regular file.\n", src);
-	// 	return 1;
-	// }
 
 	char buf[BUFSIZE];
 	int numChars;
@@ -94,15 +91,20 @@ int cpDir(char* src, char* dest) {
 
 	DIR* dirPtr;
 	struct dirent *dentry;
-	struct stat fileInfo;
 	int fileStatus;
 	char* tempDestDir = (char*)malloc(strlen(dest) + 1);
+	char* destFilePath = (char*)malloc(strlen(dest) + 1);
 	char* tempSrcDir = (char*)malloc(strlen(src) + 1);
+	char* srcFilePath = (char*)malloc(strlen(dest) + 1);
 	char* path = (char*)malloc(strlen(src) + 1);
 	strcpy(tempDestDir, dest);
 	strcpy(tempSrcDir, src);
 	strcpy(path, src);
 	char* endPtr;
+
+	tempDestDir = stringConcat(tempDestDir, "/");
+	tempSrcDir = stringConcat(tempSrcDir, "/");
+	path = stringConcat(path, "/");
 
 	// Check stat to verify src is a directory
 	// If not, then handle as an error
@@ -122,23 +124,6 @@ int cpDir(char* src, char* dest) {
 		mkdir(dest, 0700);
 	}
 
-	//Concatenate a slash - if necessary
-	endPtr = tempDestDir;
-	endPtr += strlen(dest);
-	endPtr--;
-	if (endPtr[0] != '/')
-		tempDestDir = stringConcat(tempDestDir, "/");
-	endPtr = tempSrcDir;
-	endPtr += strlen(src);
-	endPtr--;
-	if (endPtr[0] != '/')
-		tempSrcDir = stringConcat(tempSrcDir, "/");
-	endPtr = path;
-	endPtr += strlen(src);
-	endPtr--;
-	if (endPtr[0] != '/')
-		path = stringConcat(path, "/");
-
 	char* fileN;
 	// printf("Right before copying files in cpDir()\n");
  	// printf("Before strcat tempDestDir=%s\n", tempDestDir);
@@ -153,24 +138,23 @@ int cpDir(char* src, char* dest) {
 
 			fileN = dentry->d_name;
 
-			if ( (strcmp(fileN, ".") != 0) && (strcmp(fileN, "..") != 0) )
-			{
-				path = stringConcat(path, fileN);
-				printf("dentry->d_name is %s\n", dentry->d_name);
-				printf("File name before getstat is %s\n", fileN);
-				printf("Path name before getstat is %s\n", path);
-				// printf("tempSrcDir is %s\n", tempSrcDir);
-			}
+			fileStatus = getstat(path, fileN);
 
-			if ( (getstat(path)) == 1 )
-			{
-				tempDestDir = stringConcat(tempDestDir, dentry->d_name);
+			if ( fileStatus == 0) {
+				destFilePath = stringConcat(tempDestDir, dentry->d_name);
 				printf("after strcat tempDestDir=%s\n", tempDestDir); 
+				srcFilePath = stringConcat(tempSrcDir, dentry->d_name);
+				printf("srcFilePath: %s\n", srcFilePath);
+				cpFile(srcFilePath, destFilePath);
+			} else if ( fileStatus == 1 ) {
+				tempDestDir = stringConcat(tempDestDir, "/");
+				tempDestDir = stringConcat(tempDestDir, dentry->d_name);
+				tempSrcDir = stringConcat(tempSrcDir, "/");
 				tempSrcDir = stringConcat(tempSrcDir, dentry->d_name);
-				// printf("tempSrcDir: %s\n", tempSrcDir);
-				cpFile(tempSrcDir, tempDestDir);
-				strcpy(tempDestDir, dest);
-				strcpy(tempSrcDir, src);
+				if (lstat(tempDestDir, &dirInfo) < 0) {
+					mkdir(tempDestDir, 0700);
+					printf("Created directory: %s\n", tempDestDir);
+				}
 			}
 		}
 	}
