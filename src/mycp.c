@@ -3,6 +3,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define BUFSIZE 1024
 #define COPYBUF 0644
@@ -14,8 +15,7 @@ int getstat(char *filename)
     //printf("Next File %s\n", filename);
     if(lstat(filename, &fileInfo) < 0)
     	perror("Cannot open file.");
-    else
-    {
+    else {
     	if(!S_ISDIR(fileInfo.st_mode))
 			return 1;
 		else
@@ -117,6 +117,11 @@ int cpDir(char* src, char* dest) {
 		return 1;
 	}
 
+	// Check stat to verify dest is created or not
+	if (lstat(dest, &dirInfo) < 0) {
+		mkdir(dest, 0700);
+	}
+
 	//Concatenate a slash - if necessary
 	endPtr = tempDestDir;
 	endPtr += strlen(dest);
@@ -136,7 +141,7 @@ int cpDir(char* src, char* dest) {
 
 	char* fileN;
 	// printf("Right before copying files in cpDir()\n");
- //    printf("Before strcat tempDestDir=%s\n", tempDestDir);
+ 	// printf("Before strcat tempDestDir=%s\n", tempDestDir);
 
 	dirPtr = opendir(src);
 	if (dirPtr == NULL) {
