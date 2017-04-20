@@ -4,6 +4,9 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+
 
 #define BUFSIZE 1024
 #define COPYBUF 0644
@@ -14,7 +17,6 @@ int getstat(char *filename, char* fileN)
     if ( (strcmp(fileN, ".") == 0) || (strcmp(fileN, "..") == 0) )
     	return -1;
 
-    //printf("Next File %s\n", filename);
     if(lstat(filename, &fileInfo) < 0) {
     	perror("Cannot open file.");
     	return -1;
@@ -26,14 +28,6 @@ int getstat(char *filename, char* fileN)
 		return 0;
 
     return -1;
-}
-
-// Helper
-char* stringConcat(const char* s1, const char* s2) {
-	char* final = (char *)malloc(strlen(s1) + strlen(s2) + 1);
-	strcpy(final, s1);
-	strcat(final, s2);
-	return final;
 }
 
 int cpFile(char* src, char* dest) {
@@ -89,92 +83,77 @@ int cpFile(char* src, char* dest) {
 
 int cpDir(char* src, char* dest) {
 
-	DIR* dirPtr;
-	struct dirent *dentry;
-	int fileStatus;
-	char* tempDestDir = (char*)malloc(strlen(dest) + 1);
-	char* destFilePath = (char*)malloc(strlen(dest) + 1);
-	char* tempSrcDir = (char*)malloc(strlen(src) + 1);
-	char* srcFilePath = (char*)malloc(strlen(dest) + 1);
-	char* path = (char*)malloc(strlen(src) + 1);
-	strcpy(tempDestDir, dest);
-	strcpy(tempSrcDir, src);
-	strcpy(path, src);
-	char* endPtr;
+    DIR* dirPtr;
+    struct dirent *dentry;
+    dirPtr = opendir(src);
+    int fileStatus;
+    char tempDestDir[512];
+    char tempSrcDir[512];
+    char path[512];
+    char srcFilePath[512];
+    FILE *f1; //file to be copied
+    FILE *f2; //copy of the file
 
-	tempDestDir = stringConcat(tempDestDir, "/");
-	tempSrcDir = stringConcat(tempSrcDir, "/");
-	path = stringConcat(path, "/");
+    while ((dentry = readdir(dirPtr)) != NULL){
+       strcpy(tempSrcDir, src);
+       strcpy(tempDestDir, dest);
+       strcat(path, "/");
+                
+       if (!strcmp(dentry->d_name, ".") || !strcmp(dentry->d_name, "..")){      
+	 //want to ignore		 
+          continue;
+       }
 
-	// Check stat to verify src is a directory
-	// If not, then handle as an error
-	struct stat dirInfo;
-	if (lstat(src, &dirInfo) < 0) {
-		perror("Cannot open directory");
-	}
+	if(dentry->d_type == DT_DIR){ //do recursive call if dir
+          strcat (tempSrcDir, dentry->d_name);
+	  strcat (tempDestDir, dentry->d_name);
+	  mkdir  (tempDestDir, S_IRWXG | S_IRWXO | S_IRWXU);
+	  strcat (tempSrcDir, "/");
+	  strcat (tempDestDir, "/");
+	  cpDir  (tempSrcDir,tempDestDir);
+	} 
+        else {
+          strcat (tempSrcDir, dentry->d_name);
+	  strcat (tempDestDir, dentry->d_name);
 
-	if (!S_ISDIR(dirInfo.st_mode)) {
-		printf("%s is not a directory.\n", src);
-		printf("Usage: ./mycp [-R | --help] source destination\n");
-		return 1;
-	}
+          if (f1 = fopen(tempSrcDir, "r")){
+             if(f2 = fopen(tempDestDir, "w+")){
+                  char buf[BUFSIZE];
+                   while(fgets(buf, sizeof(buf), f1) != 0)
+			fputs(buf, f2);
 
-	// Check stat to verify dest is created or not
-	if (lstat(dest, &dirInfo) < 0) {
-		mkdir(dest, 0700);
-	}
+		fclose(f1);
+		fclose(f2);
+	     }
+	     else
+	     {
+		fprintf(stderr, "error: could not open destination file\n");
+		fclose(f1);
+	     }
+          }
+          else{
+             fprintf(stderr, "warning: no read permission on %s\n", tempSrcDir);
+          }
+       }
+     }
 
-	char* fileN;
-	// printf("Right before copying files in cpDir()\n");
- 	// printf("Before strcat tempDestDir=%s\n", tempDestDir);
-
-	dirPtr = opendir(src);
-	if (dirPtr == NULL) {
-		fprintf(stderr, "Error opening source directory %s\n", src);
-		perror(src);
-	}
-	else {
-		while( (dentry = readdir(dirPtr)) ) {
-
-			fileN = dentry->d_name;
-
-			fileStatus = getstat(path, fileN);
-
-			if ( fileStatus == 0) {
-				destFilePath = stringConcat(tempDestDir, dentry->d_name);
-				printf("after strcat tempDestDir=%s\n", tempDestDir); 
-				srcFilePath = stringConcat(tempSrcDir, dentry->d_name);
-				printf("srcFilePath: %s\n", srcFilePath);
-				cpFile(srcFilePath, destFilePath);
-			} else if ( fileStatus == 1 ) {
-				tempDestDir = stringConcat(tempDestDir, "/");
-				tempDestDir = stringConcat(tempDestDir, dentry->d_name);
-				tempSrcDir = stringConcat(tempSrcDir, "/");
-				tempSrcDir = stringConcat(tempSrcDir, dentry->d_name);
-				if (lstat(tempDestDir, &dirInfo) < 0) {
-					mkdir(tempDestDir, 0700);
-					printf("Created directory: %s\n", tempDestDir);
-				}
-			}
-		}
-	}
-
-	// Close directory & free dynamically allocated memory
-	free(tempSrcDir);
-	free(tempDestDir);
-	free(path);
 	closedir(dirPtr);
 	return 0;
 }
 
-int main(int argc, char const *argv[])
+int main(int argc, char *argv[])
 {
 	int copyStatus;
+        printf("%s\n", argv[0]);
+
+        printf("%s\n", argv[1]);
+        printf("%s\n", argv[2]);
+        printf("%s\n", argv[3]);
 
 	// Check arg count
 	if (argc < 3 || argc > 4) {
 		printf("Usage: ./mycp [-R | --help] source destination\n");
-		exit(EXIT_FAILURE);
+		exit(1);
 	}
 
 	if (argc == 4) {
@@ -183,20 +162,52 @@ int main(int argc, char const *argv[])
 			printf("Usage: ./mycp [-R | --help] source destination\n");
 			exit(EXIT_SUCCESS);
 		} else if (strcmp(argv[1], "-R") == 0) {
-			char* srcDir = (char*)malloc(strlen(argv[2]) + 1);
-			char* destDir = (char*)malloc(strlen(argv[3]) + 1);
-			strcpy(srcDir, argv[2]);
-			strcpy(destDir, argv[3]);
-			copyStatus = cpDir(srcDir, destDir);
-			free(srcDir);
-			free(destDir);
-			if (copyStatus > 0)
-				exit(EXIT_FAILURE);
-		} else {
+                   DIR *dSrc;
+                   DIR *dDest;
+		   char srcDir[512];
+		   char destDir[512];
+		   getcwd (srcDir, 511);
+		   strcat (srcDir, "/");
+		   strcpy (destDir, srcDir);
+	  	   strcat (srcDir, argv[2]);
+		   strcat (destDir, argv[3]);
+		   strcat (srcDir, "/");
+	       	   strcat (destDir, "/");
+                   if(dSrc = opendir(argv[2])){
+			if(dDest = opendir(argv[3])){
+			   copyStatus = cpDir(srcDir, destDir);
+			   if (copyStatus > 0)
+				exit(1);
+			   return 0;
+			}
+
+			if(ENOENT) //dest dir doesn't exist. need to create it.
+			{
+			   mkdir(argv[3], S_IRWXG | S_IRWXO | S_IRWXU);
+			   dDest = opendir(argv[3]);
+			   copyStatus = cpDir(srcDir, destDir);
+			    if (copyStatus > 0)
+				exit(1);
+			   return 0;
+			}
+
+			if(EACCES) //don't have proper permission
+			{
+				fprintf(stderr, "Do not have proper permissions on source directory.\n");
+				return 1;
+			}
+		}
+		else //can't open src dir
+		{
+			fprintf(stderr, "Could not open source directory.\n");
+			return 1;
+		}
+	     } 
+             else {
 			printf("Option not supported...\n");
 			printf("Usage: ./mycp [-R | --help] source destination\n");
 			printf("%s\n", argv[1]);
-			exit(EXIT_FAILURE);
+			exit(1);
 		}
 	} else {
 		char* srcFile = (char*)malloc(strlen(argv[1]) + 1);
@@ -207,10 +218,10 @@ int main(int argc, char const *argv[])
 		free(srcFile);
 		free(destFile);
 		if (copyStatus > 0)
-			exit(EXIT_FAILURE);
+			exit(1);
 	}
 
-	return EXIT_SUCCESS;
+	return 1;
 }
 
 

@@ -114,6 +114,8 @@ void set_env_variables(){
    setenv("myls",buffer, 0);
    realpath("mycat", buffer);
    setenv("mycat", buffer, 0);
+   realpath("mycp", buffer);
+   setenv("mycp", buffer, 0);
 
 }
 
