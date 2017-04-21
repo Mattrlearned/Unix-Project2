@@ -68,7 +68,7 @@ int cpFile(char* src, char* dest) {
             }
           
           else{
-             fprintf(stderr, "warning: no read permission on %s\n", src);
+             warn("%s", src);
           }
 
 	return 0;
@@ -120,12 +120,12 @@ int cpDir(char* src, char* dest) {
 	     }
 	     else
 	     {
-		fprintf(stderr, "1 error: could not open destination file: %s\n", tempDestDir);
+		fprintf(stderr, "error: could not open destination file: %s\n", tempDestDir);
 		fclose(f1);
 	     }
           }
           else{
-             fprintf(stderr, "warning: no read permission on %s\n", tempSrcDir);
+             warn("%s", tempSrcDir);
           }
        }
      }
@@ -136,20 +136,33 @@ int cpDir(char* src, char* dest) {
 
 int main(int argc, char *argv[])
 {
-	int copyStatus;
+      int copyStatus;
+      int c;
+      int Rflag = 0;
 
 	// Check arg count
 	if (argc < 3 || argc > 4) {
-		printf("Usage: ./mycp [-R | --help] source destination\n");
+		printf("usage:  mycp [-R | -r] source_file target_file\n"); 
+                printf("\tmycp [-R | -r] source_file ... target_directory\n");
 		exit(1);
+	}
+        while ((c = getopt (argc, argv, "Rr")) != -1)
+	{
+		switch(c)
+		{
+			case 'R':
+				Rflag = 1;
+				break;
+			case 'r':
+				Rflag = 1;
+				break;
+			default:
+				break;
+		}
 	}
 
 	if (argc == 4) {
-		if (strcmp(argv[1], "--help") == 0) {
-			printf("*** mycp --help ***\n");
-			printf("Usage: ./mycp [-R | --help] source destination\n");
-			exit(EXIT_SUCCESS);
-		} else if (strcmp(argv[1], "-R") == 0) {
+		 if (Rflag) {
                    DIR *dSrc;
                    DIR *dDest;
 		   char srcDir[512];
@@ -182,20 +195,20 @@ int main(int argc, char *argv[])
 
 			if(EACCES) //don't have proper permission
 			{
-				fprintf(stderr, "Do not have proper permissions on source directory.\n");
+				warn("%s", argv[3]);
 				return 1;
 			}
 		}
 		else //can't open src dir
 		{
-			fprintf(stderr, "1 Could not open source directory.\n");
+			fprintf(stderr, "Could not open source directory.\n");
 			return 1;
 		}
-	     } 
-             else {
-			printf("Option not supported...\n");
-			printf("Usage: ./mycp [-R | --help] source destination\n");
-			printf("%s\n", argv[1]);
+            }
+	      
+            else {
+			printf("usage:  mycp [-R | -r] source_file target_file\n"); 
+                        printf("\tmycp [-R | -r] source_file ... target_directory\n");
 			exit(1);
 		}
 	} else {
