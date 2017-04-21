@@ -11,72 +11,65 @@
 #define BUFSIZE 1024
 #define COPYBUF 0644
 
-int getstat(char *filename, char* fileN)
-{
-    struct stat fileInfo;
-    if ( (strcmp(fileN, ".") == 0) || (strcmp(fileN, "..") == 0) )
-    	return -1;
-
-    if(lstat(filename, &fileInfo) < 0) {
-    	perror("Cannot open file.");
-    	return -1;
-    }
-    
-    if(!S_ISDIR(fileInfo.st_mode))
-		return 1;
-	else
-		return 0;
-
-    return -1;
-}
-
 int cpFile(char* src, char* dest) {
+   FILE * inFile;
+   FILE * outFile;
+   char buf[BUFSIZE];
+   struct stat statbuf;
+   stat(src, &statbuf);
 	
-	// Check stat to verify src can be opened
-	// If not, then handle as an error
-	struct stat fileInfo;
-	if (lstat(src, &fileInfo) < 0) {
-		perror("Cannot open file");
+
+        if (access(src, F_OK) == -1 )
+	{
+	   fprintf(stderr, "Source file does not exist.\n");
+	   return 1;
 	}
+        if (inFile = fopen(src, "r")){
+          
+          if(S_ISDIR(statbuf.st_mode)){
+            fprintf(stderr, "mycp: %s is a directory (not copied).\n", src);
+            return 0;
+          }
 
-	char buf[BUFSIZE];
-	int numChars;
-	FILE* inFile;
-	FILE* outFile;
+          if(outFile = fopen(dest, "w+")){
+             while(fgets(buf, sizeof(buf), inFile) != 0)
+	        fputs(buf, outFile);
 
-	// Open source
-	inFile = fopen(src, "r");
-	if (inFile == NULL) {
-		fprintf(stderr, "Error opening: %s\n", src);
-		perror(src);
-	} else
-		printf("%s opened\n", src);
-
-	// Create destination
-	outFile = fopen(dest, "w");
-	if (outFile == NULL) {
-		fprintf(stderr, "Error creating: %s\n", dest);
-		perror(dest);
-	} else
-		printf("%s created\n", dest);
-
-	// Copy src to dest
-	while( !feof(inFile) ) {
-		numChars = fread(buf, 1, BUFSIZE, inFile);
-		if ( fwrite(buf, 1, numChars, outFile) != numChars ) {
-			fprintf(stderr, "Error writing to: %s\n", dest);
-			perror(dest);
-		}
-
-		if (numChars == -1) {
-			fprintf(stderr, "Error reading from: %s\n", src);
-			perror(src);
-		}
-	}
-
-	// Close files
-	fclose(inFile);
-	fclose(outFile);
+		fclose(inFile);
+		fclose(outFile);
+	     }
+	     else
+	     {  stat(dest, &statbuf);
+                if(S_ISDIR(statbuf.st_mode)){
+                   //fprintf(stderr, "mycp: %s is a directory.\n", dest);
+                   DIR *dDest;
+                   char destDir[512];
+		   getcwd (destDir, 511);
+		   strcat (destDir, "/");
+	  	   strcat (destDir, dest);
+                   strcat (destDir, "/");
+                   if(dDest = opendir(destDir)){
+                      strcat (destDir, src);
+                      if(outFile = fopen(destDir, "w+")){
+                      char buf[BUFSIZE];
+                      while(fgets(buf, sizeof(buf), inFile) != 0)
+			fputs(buf, outFile);
+                      
+		      fclose(inFile);
+		      fclose(outFile);
+                      return 0;
+                      }
+                   }
+                  }  
+                   else{
+		fprintf(stderr, "error: could not open destination file\n");
+		fclose(inFile);}
+	     }
+            }
+          
+          else{
+             fprintf(stderr, "warning: no read permission on %s\n", src);
+          }
 
 	return 0;
 }
@@ -127,7 +120,7 @@ int cpDir(char* src, char* dest) {
 	     }
 	     else
 	     {
-		fprintf(stderr, "error: could not open destination file\n");
+		fprintf(stderr, "1 error: could not open destination file: %s\n", tempDestDir);
 		fclose(f1);
 	     }
           }
@@ -144,11 +137,6 @@ int cpDir(char* src, char* dest) {
 int main(int argc, char *argv[])
 {
 	int copyStatus;
-        printf("%s\n", argv[0]);
-
-        printf("%s\n", argv[1]);
-        printf("%s\n", argv[2]);
-        printf("%s\n", argv[3]);
 
 	// Check arg count
 	if (argc < 3 || argc > 4) {
@@ -173,6 +161,7 @@ int main(int argc, char *argv[])
 		   strcat (destDir, argv[3]);
 		   strcat (srcDir, "/");
 	       	   strcat (destDir, "/");
+
                    if(dSrc = opendir(argv[2])){
 			if(dDest = opendir(argv[3])){
 			   copyStatus = cpDir(srcDir, destDir);
@@ -199,7 +188,7 @@ int main(int argc, char *argv[])
 		}
 		else //can't open src dir
 		{
-			fprintf(stderr, "Could not open source directory.\n");
+			fprintf(stderr, "1 Could not open source directory.\n");
 			return 1;
 		}
 	     } 
