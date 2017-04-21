@@ -102,10 +102,14 @@ int mysh_execPipe(char** pipes){
   return 1; 
 }
 
-
 int mycd(char **args){
+
 if (args[1] == NULL) //args[1] is target directory 
-       fprintf(stderr, "mycd expects an argument \n");
+       fprintf(stderr, "Error: Mycd expects an argument \n");
+else if (chdir(args[1]) == -1){
+	fprintf(stderr, "Error: Directory could not be found\n");
+}
+return 1;
 }
 
 void set_env_variables(){
