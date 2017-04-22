@@ -10,7 +10,7 @@
 
 char *appendFileToBuf(char *argv, char *filePath)
 {
-    FILE *f = fopen(filePath, "r");
+    FILE *f = fopen("temp.txt", "r");
     char *fBuf;
     int count = 0;
      
@@ -186,7 +186,7 @@ int mysh_execSubshell(char **pipes)
     } 
 
     wait(0);
-    unlink("temp");
+    unlink("temp.txt");
     free(args1);
     free(args2);
 
