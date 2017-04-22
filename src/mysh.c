@@ -44,8 +44,7 @@ int numDelims(char* str, char* delim) {
 void splitLine(char* line, char*** cmdStr, char* delims) {
     *cmdStr = malloc(sizeof(char*) * (numDelims(line, delims) + 2));
     if (*cmdStr) {
-        size_t i = 0;
-        int length, j;
+        int i = 0;
         char* token = strtok(line, delims);
         
         while (token != NULL) {
@@ -112,6 +111,15 @@ else if (chdir(args[1]) == -1){
 return 1;
 }
 
+int mypwd(){
+   char *currentPath = malloc(1024);
+   if(getcwd(currentPath, 1024) == '\0') {
+	perror("getcwd");
+   }
+   printf("%s\n", currentPath);
+   return 1;
+}
+
 void set_env_variables(){
    char buffer[100];
    realpath("myls",buffer);
@@ -147,8 +155,8 @@ int main(int argc, char const *argv[]) {
       
       /* check if cmd is a built-in or exit*/
       if (strcmp(args[0], "mypwd") == 0) {
-        printf("%s\n", getenv("PWD"));
-        status =1;
+        //printf("%s\n", getenv("PWD"));
+        status = mypwd();
       }
       else if (strcmp(args[0], "mycd") == 0) {
         status = mycd(args);        
