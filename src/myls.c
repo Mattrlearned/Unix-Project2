@@ -162,9 +162,9 @@ int main(int argc, char **argv)
         strcpy(file.gname, grp->gr_name);
         file.size = buf.st_size;
 
-        int mSize = strlen(ctime(&(buf.st_mtim)) + 1); //get ctime's size
+        int mSize = strlen(ctime(&(buf.st_mtime)) + 1); //get ctime's size
         file.mTime = malloc(mSize + 1);
-        strcpy(file.mTime, ctime(&(buf.st_mtim)));
+        strcpy(file.mTime, ctime(&(buf.st_mtime)));
         file.fName = cDir;
         if(l_EN)
         {
@@ -232,9 +232,9 @@ int main(int argc, char **argv)
             strcpy(fArr[i].gname, grp->gr_name);
             fArr[i].size = buf.st_size;
 
-            int mSize = strlen(ctime(&(buf.st_mtim)) + 1); //get ctime's size
+            int mSize = strlen(ctime(&(buf.st_mtime)) + 1); //get ctime's size
             fArr[i].mTime = malloc(mSize + 1);
-            strcpy(fArr[i].mTime, ctime(&(buf.st_mtim)));
+            strcpy(fArr[i].mTime, ctime(&(buf.st_mtime)));
             fArr[i].fName = dirEnt->d_name;
         }
     }
