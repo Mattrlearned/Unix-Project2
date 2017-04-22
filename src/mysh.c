@@ -1,21 +1,26 @@
+#include <fcntl.h>
+#include <errno.h>
 #include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-void parseFileForExec(char *filePath)
+char *appendFileToBuf(char *argv, char *filePath)
 {
-    FILE *fp = fopen(filePath, "r");
-    char *buf;
-    char **args;
+    FILE *f = fopen(filePath, "r");
+    char *fBuf;
     int count = 0;
      
+    printf("%d", errno);
     fseek(f, 0, SEEK_END);
     int size = ftell(f);
     
     clearerr(f);
-    buf = malloc(sizeof(char) * (size + 1)); //need to hold file + terminator
+    int strSize = strlen(argv);
+    fBuf = malloc((size + 1)); //need to hold file + terminator
     //rewind and read file
     fseek(f, 0, SEEK_SET);
     //read file
@@ -27,38 +32,21 @@ void parseFileForExec(char *filePath)
         {
             break;
         }
-        buf[i] = c;
-        if(c == '\n')
-        {
-            count++;
-        }
+        fBuf[i] = c;
         i++;
     }
-    buf[size] = '\0';
-    //point argv to buf
-    args = malloc((sizeof(char *) * count) + 1); //hold ptrs + null
-    i = 0;
-    //tokenize and replace newlines with null terminators
-    while(*buf != '\0')
-    {
-        if(*buf == '\n')
-        {
-            //replace newline with null
-            *buf = '\0';
-            buf++;
-        }
-        //point argve to next line
-        argve[i] = buf;
-        i++;
-        while(*buf != '\n' && *buf != '\0')
-        {
-            buf++;
-        }
-    }
-    //point last element of argve to NULL
-    args[count] = NULL;
+    fBuf[size] = '\0';
 
-    execvp(args[0], args);
+    char *buf = malloc(strSize + size + 1); 
+    buf[0] = '\0';
+
+    strcat(buf, argv);
+    strcat(buf, fBuf);
+    free(fBuf);
+    //point last element of argve to NULL
+    fclose(f);
+
+    return buf;
 }
  
 int mysh_execute(char** args) {
@@ -83,7 +71,6 @@ int mysh_execute(char** args) {
 	}
 	return 1;
 }
-
 
 int numDelims(char* str, char* delim) {
 	int num = 0;
@@ -112,6 +99,102 @@ void splitLine(char* line, char*** cmdStr, char* delims) {
 	}
 }
 
+
+void tokenize(char *str, char ***argv)
+{
+    int i = 0, count = 0;
+    while(1)
+    {
+        char c = str[i];
+        if(c == '\0')
+        {
+            break;
+        }
+        if(c == '\n' || c == ' ')
+        {
+            count++;
+        }
+        i++;
+    }
+    //point argv to buf
+    *argv = malloc(sizeof(char *) * (count + 1));
+    //tokenize and replace newlines with null terminators
+    i = 0;
+    while(*str != '\0')
+    {
+        if(*str == '\n' || *str == ' ')
+        {
+            //replace newline with null
+            *str = '\0';
+            str++;
+        }
+        //point argve to next line
+        (*argv)[i] = str;
+        i++;
+        while(*str != '\n' && *str != '\0' && *str != ' ')
+        {
+            str++;
+        }
+    }
+    //point last element of argve to NULL
+    (*argv)[count] = '\0';
+}
+
+
+int mysh_execSubshell(char **pipes)
+{
+    //need to execute everything between $()
+    char **args1 = NULL;
+    char **args2 = NULL;
+    splitLine(pipes[1], &args2, " ");
+
+    pid_t pid;
+    int status;
+    int fd = open("temp.txt", O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
+    pid = fork();
+    //run the cmd inside subshell
+    if(pid == 0)
+    {
+        close(1);
+        dup(fd);
+        char *progPath = getenv(pipes[1]);
+        if (!progPath) {progPath = pipes[1];}
+        if(execvp(progPath, args2) == -1)
+        {
+            printf("couldn't exec somehow\n");
+            exit(EXIT_FAILURE);
+        }
+        exit(1);
+    }
+
+    fsync(fd);
+    wait(0); //child needs to finish before parent can fork second child
+    pid = fork();
+    if(pid == 0)
+    {
+        char *progPath = getenv(pipes[0]);
+        if(!progPath) { progPath = pipes[0];}
+        char *newArg = appendFileToBuf(pipes[0], "temp");
+        //i had to call my own tokenize due to weird bug
+        tokenize(newArg, &args1);
+        if(execvp(args1[0], args1) == -1)
+        {
+            printf("couldn't exec for some reason\n");
+            exit(EXIT_FAILURE);
+        }
+        exit(1);
+    } 
+
+    wait(0);
+    unlink("temp");
+    free(args1);
+    free(args2);
+
+    return 1;
+
+}
+
+ 
 int mysh_execPipe(char** pipes){
 	char** args1 = NULL;
 	char** args2 = NULL;
@@ -233,6 +316,7 @@ int main(int argc, char const *argv[]) {
 		}
                 if(strstr(line, "$(")){
                      subshells(strcpy(temp_buf, line), &pipes); //this removes '(', ')' and splits on '$'
+                     status = mysh_execSubshell(pipes);
                      //we will need to redirect output of pipe[1] to input of pipe[2]
 	        }		
 		else{
