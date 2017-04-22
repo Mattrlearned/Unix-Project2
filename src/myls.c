@@ -20,7 +20,7 @@ struct fTuple
     char *uname;
     char *gname;
     int size;
-    char *mTime;
+    char date[20];
     char *fName;
 };
 
@@ -47,13 +47,7 @@ void modeToLetters(int mode, char *str)
 
 void printTuple(struct fTuple *tuple)
 {
-    char *tempStr;
-    tempStr = malloc(sizeof(tuple->mTime));
-    strcpy(tempStr, tuple->mTime);
-    char *newLine = strchr(tempStr, '\n');
-    *newLine = ' ';
-    printf("%10s %-3d %-10s %-10s %-10d %s%-20s\n", tuple->permissions, tuple->links, tuple->uname, tuple->gname, tuple->size, tempStr, tuple->fName); 
-    free(tempStr);
+    printf("%10s %-3d %-10s %-10s %-10d %s %-20s\n", tuple->permissions, tuple->links, tuple->uname, tuple->gname, tuple->size, tuple->date, tuple->fName); 
 }
 void print(struct fTuple *arr, int count)
 {
@@ -74,13 +68,6 @@ void print(struct fTuple *arr, int count)
         }
     }
 
-    for(i = 0; i < count; ++i)
-    {
-        free(arr[i].uname);
-        free(arr[i].gname);
-        free(arr[i].mTime);
-    }
-    free(arr);
 }
 int compar(const void* p1, const void* p2)
 {
@@ -161,10 +148,7 @@ int main(int argc, char **argv)
         file.gname = malloc(gSize + 1);
         strcpy(file.gname, grp->gr_name);
         file.size = buf.st_size;
-
-        int mSize = strlen(ctime(&(buf.st_mtim)) + 1); //get ctime's size
-        file.mTime = malloc(mSize + 1);
-        strcpy(file.mTime, ctime(&(buf.st_mtim)));
+        strftime(file.date, 20, "%b %d %H:%M", localtime(&(buf.st_mtime)));
         file.fName = cDir;
         if(l_EN)
         {
@@ -181,23 +165,9 @@ int main(int argc, char **argv)
    
     chdir(cDir); 
 
+    struct dirent **nameList;
     int count = 0;
-    if ((dirStr = opendir(cDir)) != 0)
-    {
-        //get directory size
-        while((dirEnt = readdir(dirStr)) != 0)
-        {
-            if(dirEnt->d_name[0] == '.' && a_EN == 0)
-            {
-            }
-            else
-            {
-                count++;
-            }
-        }
-        rewinddir(dirStr);
-    }
-    else
+    if((count = (scandir(cDir, &nameList, NULL, alphasort))) < 0)
     {
         displayError(cDir);
         exit(-1);
@@ -208,15 +178,7 @@ int main(int argc, char **argv)
     int i = 0;
     for(i = 0; i < count; ++i)
     {
-        dirEnt = readdir(dirStr);
-        if(dirEnt->d_name[0] == '.' && a_EN == 0)
-        {
-            //ignore entry and keep array index same
-            i--;
-        }
-        else
-        {
-            lstat(dirEnt->d_name, &buf);
+            lstat(nameList[i]->d_name, &buf);
             //fill file tuple
             modeToLetters(buf.st_mode, fArr[i].permissions);
             fArr[i].links = buf.st_nlink;
@@ -232,14 +194,11 @@ int main(int argc, char **argv)
             strcpy(fArr[i].gname, grp->gr_name);
             fArr[i].size = buf.st_size;
 
-            int mSize = strlen(ctime(&(buf.st_mtim)) + 1); //get ctime's size
-            fArr[i].mTime = malloc(mSize + 1);
-            strcpy(fArr[i].mTime, ctime(&(buf.st_mtim)));
-            fArr[i].fName = dirEnt->d_name;
-        }
+            strftime(fArr[i].date, 20, "%b %d %H:%M", localtime(&(buf.st_mtime)));
+
+            fArr[i].fName = nameList[i]->d_name;
     }
     //use stdlib qsort because why not
-    qsort((void *)fArr, count, sizeof(struct fTuple), compar);
 
     print(fArr, count);
 }
