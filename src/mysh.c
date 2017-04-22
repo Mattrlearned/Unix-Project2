@@ -4,6 +4,63 @@
 #include <stdio.h>
 #include <string.h>
 
+void parseFileForExec(char *filePath)
+{
+    FILE *fp = fopen(filePath, "r");
+    char *buf;
+    char **args;
+    int count = 0;
+     
+    fseek(f, 0, SEEK_END);
+    int size = ftell(f);
+    
+    clearerr(f);
+    buf = malloc(sizeof(char) * (size + 1)); //need to hold file + terminator
+    //rewind and read file
+    fseek(f, 0, SEEK_SET);
+    //read file
+    int i = 0;
+    while(1)
+    {
+        char c = fgetc(f);
+        if(feof(f))
+        {
+            break;
+        }
+        buf[i] = c;
+        if(c == '\n')
+        {
+            count++;
+        }
+        i++;
+    }
+    buf[size] = '\0';
+    //point argv to buf
+    args = malloc((sizeof(char *) * count) + 1); //hold ptrs + null
+    i = 0;
+    //tokenize and replace newlines with null terminators
+    while(*buf != '\0')
+    {
+        if(*buf == '\n')
+        {
+            //replace newline with null
+            *buf = '\0';
+            buf++;
+        }
+        //point argve to next line
+        argve[i] = buf;
+        i++;
+        while(*buf != '\n' && *buf != '\0')
+        {
+            buf++;
+        }
+    }
+    //point last element of argve to NULL
+    args[count] = NULL;
+
+    execvp(args[0], args);
+}
+ 
 int mysh_execute(char** args) {
 	pid_t pid, wpid;
 	int status;
