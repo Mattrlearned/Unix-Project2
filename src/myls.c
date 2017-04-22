@@ -184,4 +184,80 @@ int main(int argc, char **argv)
 }
 
 
+/*
+#include<stdio.h> 
+#include <unistd.h> 
+#include <fcntl.h> 
+#include <sys/ioctl.h> 
+#include<stdlib.h> 
+#include <sys/types.h> 
+#include <dirent.h> 
+#include <sys/stat.h> 
 
+
+  
+ int main(void) 
+ { 
+     
+    DIR *dr = NULL; 
+    struct dirent *dptr = NULL; 
+    int i = 0; 
+    char *dir = NULL;
+ 
+    struct winsize w; 
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w); 
+  
+    dir = getenv("PWD"); 
+    if(NULL == dir) 
+    { 
+        printf("\n "); 
+        return 1; 
+    } 
+     
+    dr = opendir((const char*)dir);    
+    if(NULL == dr) 
+    { 
+        printf("\n ERROR : Could not open the working directory\n"); 
+        return -1; 
+    } 
+   
+    for(i = 0; NULL != (dptr = readdir(dr)); i++) 
+    { 
+        if(dptr->d_name[0] != '.') 
+        { 
+            if(!access(dptr->d_name,X_OK)) 
+            { 
+                int fd = -1; 
+                struct stat s; 
+  
+                fd = open(dptr->d_name, O_RDONLY, 0); 
+                if(-1 == fd) 
+                { 
+                    return 1; 
+                } 
+                 
+                fstat(fd, &s); 
+
+                if(S_ISDIR(s.st_mode)) 
+                { 
+
+                    printf("\e[1;34m""%s\t""\e[m",dptr->d_name); 
+                } 
+                else 
+                {                                    
+                    printf("\e[1;32m""%s\t""\e[m",dptr->d_name); 
+                } 
+                close(fd); 
+            } 
+            else 
+            { 
+
+                printf("%s ",dptr->d_name); 
+            } 
+        } 
+    } 
+    printf("\n"); 
+  
+    return 0; 
+ }
+ */ 
