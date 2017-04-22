@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdio.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
@@ -14,9 +13,21 @@
 int l_EN = 0;
 int a_EN = 0;
 
+struct fTuple
+{
+    char permissions[10];
+    int links;
+    char *uname;
+    char *gname;
+    int size;
+    char date[20];
+    char *fName;
+};
+
+
 void modeToLetters(int mode)
 {
-    char str[20];
+    char str[10];
     strcpy(str, "----------");
 
     //permissions
@@ -33,7 +44,47 @@ void modeToLetters(int mode)
     if(mode & S_IWOTH){ str[8] = 'w'; }
     if(mode & S_IXOTH){ str[9] = 'x'; }
 
-    printf("%s ", str);
+    printf("%s", str);
+
+}
+
+void printTuple(struct fTuple *tuple)
+{
+    printf("%10s %-3d %-10s %-10s %-10d %s%-20s\n", tuple->permissions, tuple->links, tuple->uname, tuple->gname, tuple->size, tuple->date, tuple->fName); 
+}
+void print(struct fTuple *arr, int count)
+{
+    if(l_EN)
+    {
+        printf("total %d\n", count);
+    }
+    int i = 0;
+    for(i = 0; i < count; ++i)
+    {
+        if(l_EN)
+        {
+            printTuple(&arr[i]);
+        }
+        else
+        {
+            printf("%s\n", arr[i].fName);
+        }
+    }
+
+    for(i = 0; i < count; ++i)
+    {
+        free(arr[i].uname);
+        free(arr[i].gname);
+    }
+    free(arr);
+}
+int compar(const void* p1, const void* p2)
+{
+    struct fTuple f1 = *(struct fTuple*)p1;
+    struct fTuple f2 = *(struct fTuple*)p2;
+    int r = strcmp(f1.fName, f2.fName);
+
+    return r;
 }
 
 void displayError(const char *cDir)
@@ -48,25 +99,16 @@ void displayError(const char *cDir)
     }
 }        
 
-int filter(const struct dirent *dir)
-{
-    if(dir->d_name[0] == '.' && !a_EN)
-    {
-        return 0;
-    }
-    return 1;
-}
-
 int main(int argc, char **argv)
 {
     //ls
     char *cDir = ".";
     DIR *dirStr;
+    struct fTuple file; 
     struct stat buf;
     struct passwd *pwd;
     struct group *grp;
-    struct dirent **nameList;
-    char date[20];
+    struct dirent *dirEnt;
     //parse options
     char c;
     opterr = 0;
@@ -99,59 +141,47 @@ int main(int argc, char **argv)
     lstat(cDir, &buf);
     int mode = buf.st_mode;
     //it's a file
-    if(S_ISREG(mode))
-    {
-        pwd = getpwuid(buf.st_uid);
-        grp = getgrgid(buf.st_gid);
-        grp = getgrgid(buf.st_gid);
-        strftime(date, 20, "%b %d %H:%M", localtime(&(buf.st_mtime)));
-        if(l_EN)
-        {
-            modeToLetters(buf.st_mode);
-            printf("%3d ", buf.st_nlink);
-            printf("%-10s", pwd->pw_name);
-            printf("%-10s", grp->gr_name);
-            printf("%-10d", buf.st_size);
-            printf("%s ", date);
-            printf("%-20s\n", cDir);
-        }
-        else
-        {
-            printf("%s\n", cDir);
-        }
-        exit(0);
-    } 
     //else it's probably a dir
-    chdir(cDir);
+    char *oldDir = getcwd(NULL, 0);
+   
+    struct dirent **nameList;
+    chdir(cDir); 
 
     int count = 0;
-    if((count = (scandir("./", &nameList, filter, alphasort))) < 0)
+    if ((dirStr = opendir(cDir)) != 0)
+    {
+        //get directory size
+        if((count = (scandir(cDir, &nameList, NULL, alphasort))) < 0)
+        {
+            fprintf(stderr, "can't open %s", cDir);
+            exit(-1);
+        }        
+    }
+    else
     {
         displayError(cDir);
         exit(-1);
     }
+    //FILL ARRAY
     int i = 0;
-
+    char date[20];
     for(i = 0; i < count; ++i)
     {
-        lstat(nameList[i]->d_name, &buf);
-        pwd = getpwuid(buf.st_uid);
-        grp = getgrgid(buf.st_gid);
-        strftime(date, 20, "%b %d %H:%M", localtime(&(buf.st_mtime)));
-        if(l_EN)
-        {
+            lstat(dirEnt->d_name, &buf);
+            //fill file tuple
             modeToLetters(buf.st_mode);
-            printf("%3d ", buf.st_nlink);
-            printf("%-10s", pwd->pw_name);
-            printf("%-10s", grp->gr_name);
-            printf("%-10d", buf.st_size);
-            printf("%s ", date);
-            printf("%-20s\n", nameList[i]->d_name); 
-        }
-        else
-        {
-            printf("%s\n", nameList[i]->d_name);
-        }
+            printf("%5d", buf.st_nlink);
+            pwd = getpwuid(buf.st_uid);
+            grp = getgrgid(buf.st_gid);
 
+            printf("%20s", pwd->pw_name);
+            printf("%20s", grp->gr_name);
+
+            strftime(date, 20, "%b %d %H:%M", localtime(&(buf.st_mtime)));
+            printf("%s\n", nameList[i]->d_name);
     }
 }
+    //use stdlib qsort because why not
+
+
+
