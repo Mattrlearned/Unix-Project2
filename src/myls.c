@@ -245,7 +245,7 @@ int main(int argc, char **argv)
                 } 
                 else 
                 {                                    
-                    printf("\e[1;32m""%s\t",dptr->d_name); 
+                    printf("\e[1;32m""%s\t""\e[m",dptr->d_name); 
                 } 
                 close(fd); 
             } 
