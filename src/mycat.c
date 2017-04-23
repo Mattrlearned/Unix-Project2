@@ -17,22 +17,23 @@ int main(int argc, char *argv[])
 	free(str);
 	return 1;
    }
-   else{ //reading from a file
+   else {
+    for (int i = 1; i < argc; i++) {          // iterate through arguments passed
       char c;
       FILE *file;
       struct stat fStat;
-      file = fopen(argv[1],"r");
+      file = fopen(argv[i],"r");
 
       if(file == NULL){
-         warn("%s", argv[1]);
+         warn("%s", argv[i]);
          return 0;
       }
       else if(file != NULL && stat(argv[1], &fStat) <0){
-         warn("%s", argv[1]);
+         warn("%s", argv[i]);
          return 0;
       }
       else if(S_ISDIR(fStat.st_mode)){
-         fprintf(stderr, "mycat: %s: Is a directory\n", argv[1]);
+         fprintf(stderr, "mycat: %s: Is a directory\n", argv[i]);
          return 0;
       }
       else {
@@ -41,4 +42,6 @@ int main(int argc, char *argv[])
          fclose(file);
       }
    }
-}                       
+} 
+return 1;
+}                      

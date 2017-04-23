@@ -40,11 +40,11 @@ void displayError(const char *cDir)
 {
     if(errno & EACCES)
     {
-        fprintf(stderr, "ls: cannot access %s: Permission denied.\n", cDir);
+        fprintf(stderr, "myls: cannot access %s: Permission denied.\n", cDir);
     }
     if(errno & ENOENT)
     {
-        fprintf(stderr, "ls: cannot access %s: No such file or directory\n", cDir);
+        fprintf(stderr, "myls: cannot access %s: No such file or directory\n", cDir);
     }
 }        
 
