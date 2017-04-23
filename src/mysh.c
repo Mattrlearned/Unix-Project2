@@ -101,6 +101,31 @@ int mysh_execPipe(char** pipes){
 	return 1;
 }
 
+void removeChar(char *str, char toRemove) {
+    char *old, *new;
+    for (old = new = str; *old != '\0'; old++) {
+        *new = *old;
+        if (*new != toRemove) new++;
+    }
+    *new = '\0';
+}
+
+void subshells(char* line, char*** cmdStr) {
+  char* delim = "$";
+  int i =0;
+  removeChar(line, '(');
+  removeChar(line, ')');
+
+  *cmdStr = malloc(sizeof(char*) * (numDelims(line, delim) + 2));
+  char* token = strtok(line, delim);
+  while (token != NULL) {
+      (*cmdStr)[i++] = strdup(token);
+      token = strtok(0, delim);
+  }
+  (*cmdStr)[i] = '\0';
+}
+
+
 int mycd(char **args){
 	if (args[1] == NULL) //args[1] is target directory
 		fprintf(stderr, "Error: Mycd expects an argument \n");
@@ -149,6 +174,10 @@ int main(int argc, char const *argv[]) {
 			splitLine(strcpy(temp_buf, line), &pipes, "|"); //split pipe cmds
 			status = mysh_execPipe(pipes);
 		}
+                if(strstr(line, "$(")){
+                     subshells(strcpy(temp_buf, line), &pipes); //this removes '(', ')' and splits on '$'
+                     //we will need to redirect output of pipe[1] to input of pipe[2]
+	        }		
 		else{
 			splitLine(strcpy(temp_buf, line), &args, " "); //split into tokens
 
