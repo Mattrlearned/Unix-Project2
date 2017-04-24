@@ -1,4 +1,6 @@
 *.[oa]
+.DS_Store
+src/.DS_Store
 nopermission.txt
 readonly.txt
 writeonly.txt

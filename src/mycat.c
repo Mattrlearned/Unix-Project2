@@ -4,9 +4,9 @@
 #include <sys/stat.h>
 
 int main(int argc, char *argv[]) {
-	if (argc == 1) { //input is from stdin, not a file
-		int bufSize = 512;
-		char* str = (char*) malloc(bufSize);
+   if (argc == 1) { //input is from stdin, not a file
+      int bufSize = 512;
+      char* str = (char*) malloc(bufSize);
 		int isInput;
 		while (1) {
 			isInput = getline(&str, &bufSize, stdin);
