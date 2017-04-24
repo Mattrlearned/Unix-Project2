@@ -25,13 +25,10 @@ int main(int argc, char *argv[]) {
 
 			if (file == NULL) {
 				warn("%s", argv[i]);
-				return 0;
-			} else if (file != NULL && stat(argv[1], &fStat) < 0) {
+			} else if (file != NULL && stat(argv[i], &fStat) < 0) {
 				warn("%s", argv[i]);
-				return 0;
 			} else if (S_ISDIR(fStat.st_mode)) {
 				fprintf(stderr, "mycat: %s: Is a directory\n", argv[i]);
-				return 0;
 			} else {
 				while ((c = getc(file)) != EOF)
 					putchar(c);

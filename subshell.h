@@ -1,39 +1,3 @@
-char* procSubshells(const char* line) {
-	size_t originSize = strlen(line);
-	char* newCommand = malloc(sizeof(char) * (originSize + 1));
-	strcpy(newCommand, line);
-
-	char* cursor;
-	while (cursor = strstr(newCommand, "$(")) {
-		char* subcmd = cursor + 2;
-		*cursor = '\0';
-
-		if (!(cursor = strstr(subcmd, ")"))) {
-			fprintf(stderr, "error: non-terminated subshell");
-			return 0;
-		}
-
-		cursor += 1;
-		*(cursor - 1) = '\0';
-
-		size_t subSize = strlen(subcmd);
-
-		char* subshellDump = 0;
-		getExecOutput(subcmd, &subshellDump);
-		newlineToSpace(subshellDump);
-
-		size_t tempSize = (originSize - subSize + strlen(subshellDump));
-		char* temp = malloc(sizeof(char) * (tempSize + 1));
-		sprintf(temp, "%s%s%s", newCommand, subshellDump, cursor);
-
-		free(newCommand);
-		newCommand = temp;
-
-	}
-	printf("%s\n", newCommand);
-	return newCommand;
-}
-
 int execSubshell(char **args) {
 	pid_t pid, wpid;
 	int status;
@@ -119,5 +83,39 @@ int getExecOutput(char* cmd, char** output) {
 	close(fd[STDOUT_FILENO]);
 	fflush(stdout);
 	fflush(stdin);
+}
+
+char* procSubshells(const char* line) {
+        size_t originSize = strlen(line);
+        char* newCmd = malloc(sizeof(char) * (originSize + 1));
+        strcpy(newCmd, line);
+
+        char* ptr;
+        while (ptr = strstr(newCmd, "$(")) {
+                char* subcmd = ptr + 2;
+                *ptr = '\0';
+
+                if (!(ptr = strstr(subcmd, ")"))) {
+                        fprintf(stderr, "error: non-terminated subshell");
+                        return 0;
+                }
+
+                ptr += 1;
+                *(ptr - 1) = '\0';
+
+                size_t subSize = strlen(subcmd);
+
+                char* subshellDump = 0;
+                getExecOutput(subcmd, &subshellDump); //dump output of subshell cmd into char array
+                newlineToSpace(subshellDump); //replace all newlines with spaces
+
+                size_t tempSize = (originSize - subSize + strlen(subshellDump));
+                char* temp = malloc(sizeof(char) * (tempSize + 1));
+                sprintf(temp, "%s%s%s", newCmd, subshellDump, ptr); //append subshell output to orig cmd and add null terminator
+
+                free(newCmd);
+                newCmd = temp;
+        }
+        return newCmd;
 }
 

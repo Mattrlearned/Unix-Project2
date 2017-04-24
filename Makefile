@@ -1,16 +1,24 @@
-#this makefile will compile components of the project (i.e. mycat and myls)
-#if a member is working on multiple components, it will compile all these components
-#source code must be contained in the ./src folder for this to work
+TRGTS = mycat mycp myls mysh
 
-SOURCES = $(wildcard src/*.c)
-OBJS = $(notdir $(patsubst %.c,%.o,$(wildcard ./src/*.c)))
-PROGS = $(notdir $(basename $(SOURCES)))
-CC= gcc
+all: $(TRGTS)
 
-all: $(PROGS)
+mycat: ./mycat_src/mycat.c
+	cd ./mycat_src; make ; cp mycat ../.
 
-$(OBJS): %.o: ./src/%.c
-	gcc -g -w -c $< -o $@
+mycp: ./mycp_src/mycp.c
+	cd ./mycp_src; make ; cp mycp ../.
+
+myls: ./myls_src/myls.c
+	cd ./myls_src; make ; cp myls ../.
+
+mysh.o: mysh.c textProc.h subshell.h
+	gcc -c -w -g mysh.c -o mysh.o
+
+mysh: mysh.o
+	gcc mysh.o -o mysh
 
 clean:
-	rm -rf $(OBJS) $(PROGS)
+	rm -f *.o $(TRGTS)
+	cd ./mycat_src; make clean
+	cd ./mycp_src; make clean
+	cd ./myls_src; make clean
