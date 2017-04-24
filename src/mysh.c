@@ -301,50 +301,50 @@ void set_env_variables(){
 
 }
 
-char* getCurrentDirectory() {
-	char* currentPath = malloc(1024);
-	char* currentDirectory;
-	if(getcwd(currentPath, 1024) == '\0') {
-		perror("getcwd");
-	}
+// char* getCurrentDirectory() {
+// 	char* currentPath = malloc(1024);
+// 	char* currentDirectory;
+// 	if(getcwd(currentPath, 1024) == '\0') {
+// 		perror("getcwd");
+// 	}
 
-	currentDirectory = malloc(strlen(currentPath) + 1);
+// 	currentDirectory = malloc(strlen(currentPath) + 1);
 
-	int done = 0;
-	int i = strlen(currentPath) + 1;
+// 	int done = 0;
+// 	int i = strlen(currentPath) + 1;
 
-	while(!done) {
-		if (currentPath[i] == '/')
-		{
-			done = 1;
-			i++;
-		}
-		else {
-			i--;
-		}
-	}
+// 	while(!done) {
+// 		if (currentPath[i] == '/')
+// 		{
+// 			done = 1;
+// 			i++;
+// 		}
+// 		else {
+// 			i--;
+// 		}
+// 	}
 
-    strcpy(currentDirectory, &currentPath[i]);
+//     strcpy(currentDirectory, &currentPath[i]);
 
-	return currentDirectory;
-}
+// 	return currentDirectory;
+// }
 
-char* getHost() {
-	char* hostname = malloc(148);
-	int status;
-	status = gethostname(hostname, sizeof(hostname)+1);
-	if (status != 0)
-		return NULL;
-	else {
-		for (int i = 0; i < strlen(hostname); ++i)
-		{
-			if (hostname[i] == '.') {
-				hostname[i] = '\0';
-			}
-		}
-	return hostname;
-	}
-}
+// char* getHost() {
+// 	char* hostname = malloc(148);
+// 	int status;
+// 	status = gethostname(hostname, sizeof(hostname)+1);
+// 	if (status != 0)
+// 		return NULL;
+// 	else {
+// 		for (int i = 0; i < strlen(hostname); ++i)
+// 		{
+// 			if (hostname[i] == '.') {
+// 				hostname[i] = '\0';
+// 			}
+// 		}
+// 	return hostname;
+// 	}
+// }
 
 int main(int argc, char const *argv[]) {
 	const int SIZE = 512;
@@ -355,21 +355,22 @@ int main(int argc, char const *argv[]) {
 	char **pipes = NULL;
 
 	// Get uid & current directory
-	register struct passwd *p;
-	register uid_t uid;
-	uid = geteuid();
-	p = getpwuid(uid);
-	char* currentDirectory = getCurrentDirectory();
-	char* hostname = getHost();
+	// register struct passwd *p;
+	// register uid_t uid;
+	// uid = geteuid();
+	// p = getpwuid(uid);
+	// char* currentDirectory = getCurrentDirectory();
+	// char* hostname = getHost();
 
 	do {
 		set_env_variables();
-		currentDirectory = getCurrentDirectory();
+		// currentDirectory = getCurrentDirectory();
 
-		if (p)
-			printf("%s-mysh:%s %s$ ", hostname, currentDirectory, p->pw_name);
-		else
-			printf("mysh-$ ");
+		// if (p)
+		// 	printf("%s-mysh:%s %s$ ", hostname, currentDirectory, p->pw_name);
+		// else
+		// 	printf("mysh-$ ");
+		printf("mysh-$ ");
 
 		fgets(line, SIZE, stdin);
 		line[strcspn(line, "\n")] = 0; //remove newline character
