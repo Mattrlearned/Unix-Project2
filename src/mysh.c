@@ -8,6 +8,16 @@
 #include <stdio.h>
 #include <string.h>
 
+
+void removeChar(char *str, char toRemove) {
+    char *old, *new;
+    for (old = new = str; *old != '\0'; old++) {
+        *new = *old;
+        if (*new != toRemove) new++;
+    }
+    *new = '\0';
+}
+
 char *appendFileToBuf(char *argv, char *filePath)
 {
     FILE *f = fopen("temp.txt", "r");
@@ -90,10 +100,11 @@ void splitLine(char* line, char*** cmdStr, char* delims) {
 	if (*cmdStr) {
 		int i = 0;
 		char* token = strtok(line, delims);
-
 		while (token != NULL) {
-			(*cmdStr)[i++] = strdup(token);
-			token = strtok(0, delims);
+                   if(!strstr(token, "|")){                        
+		      (*cmdStr)[i++] = strdup(token);
+                   }
+		   token = strtok(NULL, delims);
 		}
 		(*cmdStr)[i] = '\0';
 	}
@@ -164,6 +175,8 @@ int mysh_execSubshell(char **pipes)
             printf("couldn't exec somehow\n");
             exit(EXIT_FAILURE);
         }
+        fflush(stdout);
+        fflush(stdin);
         exit(1);
     }
 
@@ -199,9 +212,8 @@ int mysh_execPipe(char** pipes){
 	char** args1 = NULL;
 	char** args2 = NULL;
 	splitLine(pipes[0],&args1, " ");
-	splitLine(pipes[1],&args2, " ");
-
-	pid_t pid1, pid2;
+        splitLine(pipes[1],&args2, " ");	
+        pid_t pid1, pid2;
 	int fd[2];
 	pipe(fd);
 
@@ -238,16 +250,9 @@ int mysh_execPipe(char** pipes){
 
 	free(args1);
 	free(args2);
+        fflush(stdout);
+        fflush(stdin);
 	return 1;
-}
-
-void removeChar(char *str, char toRemove) {
-    char *old, *new;
-    for (old = new = str; *old != '\0'; old++) {
-        *new = *old;
-        if (*new != toRemove) new++;
-    }
-    *new = '\0';
 }
 
 void subshells(char* line, char*** cmdStr) {
@@ -314,7 +319,7 @@ int main(int argc, char const *argv[]) {
 			splitLine(strcpy(temp_buf, line), &pipes, "|"); //split pipe cmds
 			status = mysh_execPipe(pipes);
 		}
-                if(strstr(line, "$(")){
+                else if(strstr(line, "$(")){
                      subshells(strcpy(temp_buf, line), &pipes); //this removes '(', ')' and splits on '$'
                      status = mysh_execSubshell(pipes);
                      //we will need to redirect output of pipe[1] to input of pipe[2]
