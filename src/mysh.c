@@ -329,6 +329,23 @@ char* getCurrentDirectory() {
 	return currentDirectory;
 }
 
+char* getHost() {
+	char* hostname = malloc(148);
+	int status;
+	status = gethostname(hostname, sizeof(hostname)+1);
+	if (status != 0)
+		return NULL;
+	else {
+		for (int i = 0; i < strlen(hostname); ++i)
+		{
+			if (hostname[i] == '.') {
+				hostname[i] = '\0';
+			}
+		}
+	return hostname;
+	}
+}
+
 int main(int argc, char const *argv[]) {
 	const int SIZE = 512;
 	int status;
@@ -343,13 +360,14 @@ int main(int argc, char const *argv[]) {
 	uid = geteuid();
 	p = getpwuid(uid);
 	char* currentDirectory = getCurrentDirectory();
+	char* hostname = getHost();
 
 	do {
 		set_env_variables();
 		currentDirectory = getCurrentDirectory();
 
 		if (p)
-			printf("mysh:%s %s$ ", currentDirectory, p->pw_name);
+			printf("%s-mysh:%s %s$ ", hostname, currentDirectory, p->pw_name);
 		else
 			printf("mysh-$ ");
 
