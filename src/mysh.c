@@ -300,6 +300,34 @@ void set_env_variables(){
 
 }
 
+char* getCurrentDirectory() {
+	char* currentPath = malloc(1024);
+	char* currentDirectory;
+	if(getcwd(currentPath, 1024) == '\0') {
+		perror("getcwd");
+	}
+
+	currentDirectory = malloc(strlen(currentPath) + 1);
+
+	int done = 0;
+	int i = strlen(currentPath) + 1;
+
+	while(!done) {
+		if (currentPath[i] == '/')
+		{
+			done = 1;
+			i++;
+		}
+		else {
+			i--;
+		}
+	}
+
+    strcpy(currentDirectory, &currentPath[i]);
+
+	return currentDirectory;
+}
+
 int main(int argc, char const *argv[]) {
 	const int SIZE = 512;
 	int status;
@@ -307,9 +335,22 @@ int main(int argc, char const *argv[]) {
 	char temp_buf[SIZE];
 	char **args = NULL;
 	char **pipes = NULL;
+
+	// Get uid & current directory
+	register struct passwd *p;
+	register uid_t uid;
+	uid = geteuid();
+	p = getpwuid(uid);
+	char* currentDirectory = getCurrentDirectory();
+
 	do {
 		set_env_variables();
-		printf("mysh-$ ");
+		currentDirectory = getCurrentDirectory();
+
+		if (p)
+			printf("mysh:%s %s$ ", currentDirectory, p->pw_name);
+		else
+			printf("mysh-$ ");
 
 		fgets(line, SIZE, stdin);
 		line[strcspn(line, "\n")] = 0; //remove newline character
