@@ -113,48 +113,47 @@ void set_env_variables() {
 
 }
 int my_redirec(char** args) {
-  int add_to_command = 1;
-  int bufsize = 256;
-  int in = 0;
-  int out = 0;
-  pid_t pid; 
-  char** command = malloc(bufsize * sizeof(char**));
-  for (int i = 0; args[i] != NULL; i++) {
-    if (strcmp(args[i], "<") == 0 || strcmp(args[i], ">") == 0) {
-      if (add_to_command) {
-        add_to_command = 0;
-        command[i] = NULL;
-      }
-      int status;
-      pid = fork();
-if (pid == 0) {
-        if (strcmp(args[i], "<") == 0) {
-          in = open(args[i + 1], O_RDONLY);
-          dup2(in, 0);
-          close(in);
-        } else if (strcmp(args[i], ">") == 0) {
-          out = open(args[i + 1], O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR |
-                                  S_IRGRP | S_IWGRP | S_IWUSR);
-          dup2(out, 1);
-          close(out);
-        }
-	char *progPath = getenv(command[0]);
-	if (!progPath) {
-		progPath = command[0];
-	}
-	if (execvp(progPath, command) == -1) {
-		printf("fail\n");
-		exit(EXIT_FAILURE);
-	}
-        exit(1);
-      } else {
-        while (wait(&status) != pid);
-      }
-    }
-    if (add_to_command) {
-      command[i] = args[i];
-    }
-  }
+  	int add_to_command = 1;
+	int bufsize = 256;
+	int in = 0;
+  	int out = 0;
+  	pid_t pid; 
+  	char** command = malloc(bufsize * sizeof(char**));
+  	for (int i = 0; args[i] != NULL; i++) {
+    		if (strcmp(args[i], "<") == 0 || strcmp(args[i], ">") == 0) {
+      			if (add_to_command) {
+        		add_to_command = 0;
+        		command[i] = NULL;
+      		}
+      		int status;
+      		pid = fork();
+		if (pid == 0) {
+        		if (strcmp(args[i], "<") == 0) {
+          			in = open(args[i + 1], O_RDONLY);
+          			dup2(in, 0);
+          			close(in);
+        		} else if (strcmp(args[i], ">") == 0) {
+          			out = open(args[i + 1], O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR |S_IRGRP | S_IWGRP | S_IWUSR);
+          			dup2(out, 1);
+          			close(out);
+        		}
+			char *progPath = getenv(command[0]);
+			if (!progPath) {
+				progPath = command[0];
+			}
+			if (execvp(progPath, command) == -1) {
+				printf("fail\n");
+				exit(EXIT_FAILURE);
+			}
+        		exit(1);
+      		} else {
+        		while (wait(&status) != pid);
+      			}
+    		}
+    		if (add_to_command) {
+      			command[i] = args[i];
+    		}
+  	}
   return 1;
 }
 
