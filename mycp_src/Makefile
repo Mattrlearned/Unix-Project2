@@ -1,6 +1,6 @@
 OBJS = mycp.o
 CC = gcc
-CFLAGS = -c -g -w
+CFLAGS = -c -w -g -std=gnu99
 
 all: mycp
 

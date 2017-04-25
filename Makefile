@@ -1,5 +1,5 @@
 TRGTS = mycat mycp myls mysh
-
+CFLAGS = -c -w -g -std=gnu99
 all: $(TRGTS)
 
 mycat: ./mycat_src/mycat.c
@@ -12,7 +12,7 @@ myls: ./myls_src/myls.c
 	cd ./myls_src; make ; cp myls ../.
 
 mysh.o: mysh.c textProc.h subshell.h
-	gcc -c -w -g mysh.c -o mysh.o
+	gcc $(CFLAGS) mysh.c -o mysh.o
 
 mysh: mysh.o
 	gcc mysh.o -o mysh
