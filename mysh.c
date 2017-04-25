@@ -10,6 +10,46 @@
 #include "textProc.h"
 #include "subshell.h"
 
+
+int mysh_execWithRD(char** args, char* inFile, char* outFile, int in, int out){
+    int status;
+    int ofd;
+    int ifd;
+    pid_t pid, wpid;
+    
+    pid = fork();
+    if (pid == 0)
+    {
+        if(in == 1){
+	ifd = open(inFile,O_RDONLY);
+	dup2(ifd,STDIN_FILENO);
+	close(ifd);
+        }
+        if(out == 1){
+	ofd = open(outFile,O_WRONLY|O_CREAT | O_TRUNC, S_IRUSR |S_IRGRP | S_IWGRP | S_IWUSR); 
+	dup2(ofd,STDOUT_FILENO);
+	close(ofd);
+        }
+	char *progPath = getenv(args[0]);
+	if (!progPath) {
+		progPath = args[0];
+	}
+	if (execvp(progPath, args) == -1) {
+		printf("fail\n");
+		exit(EXIT_FAILURE);
+	}
+        exit(1);
+      	} else if( pid < 0){ exit(1);}
+        else {
+		do {
+                        wpid = waitpid(pid, &status, WUNTRACED);
+       } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+       }
+   fflush(stdout);
+   fflush(stdin);  
+   return 1;
+}
+   
 int mysh_execute(char** args) {
 	pid_t pid, wpid;
 	int status;
@@ -112,107 +152,6 @@ void set_env_variables() {
 	setenv("mycp", buffer, 0);
 
 }
-int my_redirec(char** args) {
-  	int add_to_command = 1;
-	int bufsize = 256;
-	int in = 0;
-  	int out = 0;
-  	pid_t pid; 
-  	char** command = malloc(bufsize * sizeof(char**));
-  	for (int i = 0; args[i] != NULL; i++) {
-    		if (strcmp(args[i], "<") == 0 || strcmp(args[i], ">") == 0) {
-      			if (add_to_command) {
-        		add_to_command = 0;
-        		command[i] = NULL;
-      		}
-      		int status;
-      		pid = fork();
-		if (pid == 0) {
-        		if (strcmp(args[i], "<") == 0) {
-          			in = open(args[i + 1], O_RDONLY);
-				if (in == -1){
-					fprintf(stderr,"open() failed. Unable to open file '%s'\n",args[i+1]);
-					exit (1);
-				}
-          			dup2(in, 0);
-          			close(in);
-				for(int j = i; args[j] != NULL; j++){
-					if (strcmp(args[j], ">") == 0) {
-          				out = open(args[j + 1], O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR |S_IRGRP | 							S_IWGRP | S_IWUSR);
-          				dup2(out, 1);
-          				close(out);
-					}
-        			}
-        		} else if (strcmp(args[i], ">") == 0) {
-          			out = open(args[i + 1], O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR |S_IRGRP | S_IWGRP | S_IWUSR);
-          			dup2(out, 1);
-          			close(out);
-        		}
-			char *progPath = getenv(command[0]);
-			if (!progPath) {
-				progPath = command[0];
-			}
-			if (execvp(progPath, command) == -1) {
-				printf("fail\n");
-				exit(EXIT_FAILURE);
-			}
-        		exit(1);
-      		} else {
-        		while (wait(&status) != pid);
-      			}
-    		}
-    		if (add_to_command) {
-      			command[i] = args[i];
-    		}
-  	}
-  return 1;
-}
-
-
-/* char* getCurrentDirectory() {
- 	char* currentPath = malloc(1024);
- 	char* currentDirectory;
- 	if(getcwd(currentPath, 1024) == '\0') {
- 		perror("getcwd");
- 	}
-
- 	currentDirectory = malloc(strlen(currentPath) + 1);
-
- 	int done = 0;
- 	int i = strlen(currentPath) + 1;
-
- 	while(!done) {
- 		if (currentPath[i] == '/')
- 		{
- 			done = 1;
- 			i++;
- 		}
- 		else {
- 			i--;
- 		}
- 	}
-
-     strcpy(currentDirectory, &currentPath[i]);
-
- 	return currentDirectory;
- }
-
- char* getHost() {
- 	char* hostname = malloc(148);
- 	int status;
- 	status = gethostname(hostname, sizeof(hostname)+1);
- 	if (status != 0)
- 		return NULL;
- 	else {
- 		for (int i = 0; i < strlen(hostname); ++i)
- 		{
- 			if (hostname[i] == '.') {
- 				hostname[i] = '\0';
- 			}
- 		}
- 	return hostname;
- 	}
- } */
 
 int main(int argc, char const *argv[]) {
 	const int SIZE = 512;
@@ -222,21 +161,8 @@ int main(int argc, char const *argv[]) {
 	char **args = NULL;
 	char **pipes = NULL;
 
-	/* Get uid & current directory
-	register struct passwd *p;
-	register uid_t uid;
-	uid = geteuid();
-	p = getpwuid(uid);
-	char* currentDirectory = getCurrentDirectory();
-	char* hostname = getHost(); */
-
 	do {
 		set_env_variables();
-		// currentDirectory = getCurrentDirectory();
-		// if (p)
-		// 	printf("%s-mysh:%s %s$ ", hostname, currentDirectory, p->pw_name);
-		// else
-		// 	printf("mysh-$ ");
 		printf("mysh-$ ");
 		fgets(line, SIZE, stdin);
 		line[strcspn(line, "\n")] = 0; //remove newline character
@@ -248,7 +174,16 @@ int main(int argc, char const *argv[]) {
 		} else if (strstr(line, "$(")) {
 			char* cmd = procSubshells(line);
 			status = execSubshell(cmd);
-		} else {
+		}  
+                else if(strstr(line, ">") || strstr(line, "<")){
+                	char *inFile = NULL;
+           		char *outFile = NULL;
+                         int in =1;
+                         int out =1;
+          		 getRedir(strcpy(temp_buf, line), &args, " ", &inFile, &outFile, &in, &out);
+          		 status =  mysh_execWithRD(args, inFile, outFile, in, out);
+ 		}
+                else {
 			splitLine(strcpy(temp_buf, line), &args, " "); //split into tokens
 
 			if (strcmp(args[0], "mypwd") == 0) {
@@ -257,12 +192,8 @@ int main(int argc, char const *argv[]) {
 				status = mycd(args);
 			}
 
-			else if (strcmp(args[0], "exit") == 0
-					|| strcmp(args[0], "quit") == 0)
+			else if (strcmp(args[0], "exit") == 0|| strcmp(args[0], "quit") == 0)
 				status = 0;
-			else if (strstr(line, "<")||strstr(line,">")) {
-				status = my_redirec(args);
-			}
 			else
 				status = mysh_execute(args);
 		}
@@ -272,4 +203,5 @@ int main(int argc, char const *argv[]) {
 	free(pipes);
 	return EXIT_SUCCESS;
 }
+
 
