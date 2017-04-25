@@ -130,8 +130,19 @@ int my_redirec(char** args) {
 		if (pid == 0) {
         		if (strcmp(args[i], "<") == 0) {
           			in = open(args[i + 1], O_RDONLY);
+				if (in == -1){
+					fprintf(stderr,"open() failed. Unable to open file '%s'\n",args[i+1]);
+					exit (1);
+				}
           			dup2(in, 0);
           			close(in);
+				for(int j = i; args[j] != NULL; j++){
+					if (strcmp(args[j], ">") == 0) {
+          				out = open(args[j + 1], O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR |S_IRGRP | 							S_IWGRP | S_IWUSR);
+          				dup2(out, 1);
+          				close(out);
+					}
+        			}
         		} else if (strcmp(args[i], ">") == 0) {
           			out = open(args[i + 1], O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR |S_IRGRP | S_IWGRP | S_IWUSR);
           			dup2(out, 1);
