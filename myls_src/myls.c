@@ -61,12 +61,31 @@ void modeToLetters(int mode) {
 
 void displayError(const char *cDir) {
 	if (errno & EACCES) {
-		fprintf(stderr, "ls: cannot access %s: Permission denied.\n", cDir);
+		fprintf(stderr, "myls: cannot access %s: Permission denied.\n", cDir);
 	}
 	if (errno & ENOENT) {
-		fprintf(stderr, "ls: cannot access %s: No such file or directory\n",
+		fprintf(stderr, "myls: cannot access %s: No such file or directory\n",
 				cDir);
 	}
+}
+
+int totalBlocks(char* dir, struct dirent** nameList, int count) {
+  const int SIZE=1024;
+  char buf[SIZE];
+  strcpy(buf, dir);
+  if (dir[strlen(dir) - 1] != '/')
+    strcat(buf, "/");
+
+  int total = 0;
+  struct stat fileInfo;
+  for (int i = 0; i < count; i++) {
+    char temp_buf[SIZE];
+    strcpy(temp_buf, buf);
+    if (!stat(strcat(temp_buf, nameList[i]->d_name), &fileInfo)) {
+      total += fileInfo.st_blocks;
+    }
+  }
+  return total;
 }
 
 int filter(const struct dirent *dir) {
@@ -85,6 +104,8 @@ int main(int argc, char **argv) {
 	struct group *grp;
 	struct dirent **nameList;
 	char date[20];
+        int numItems;
+
 	//parse options
 	char c;
 	opterr = 0;
@@ -109,6 +130,14 @@ int main(int argc, char **argv) {
 		cDir = malloc(size);
 		strcpy(cDir, argv[optind]);
 	}
+        numItems = scandir(cDir, &nameList, filter, alphasort);
+        if(l_EN){
+           if(numItems < 0){
+                displayError(cDir);
+                exit(-1);
+           } 
+           else  
+           printf("total %d\n", totalBlocks(cDir, nameList, numItems));}
 	//ls -l
 	//COUNT -> FILL -> SORT -> DISPLAY
 	if (lstat(cDir, &buf) == -1) {
@@ -131,7 +160,7 @@ int main(int argc, char **argv) {
 			printf("%s ", date);
 			printf("%-20s\n", cDir);
 		} else {
-			printf("%s\n", cDir);
+			printf("%s\n",cDir);
 		}
 		exit(0);
 	}
@@ -159,7 +188,7 @@ int main(int argc, char **argv) {
 			printf("%s ", date);
 			printf("%-20s\n", nameList[i]->d_name);
 		} else {
-			printf("%s\n", nameList[i]->d_name);
+			printf("%s\n",nameList[i]->d_name);
 		}
 
 	}

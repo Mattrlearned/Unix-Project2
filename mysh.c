@@ -163,7 +163,10 @@ int main(int argc, char const *argv[]) {
 
 	do {
 		set_env_variables();
-		printf("mysh-$ ");
+                char* color1 = "\033[36m";
+                char* color2 = "\033[0m";
+                char* prompt = "mysh-$ ";
+                printf("%s%s%s",color1,  prompt, color2);
 		fgets(line, SIZE, stdin);
 		line[strcspn(line, "\n")] = 0; //remove newline character
 
